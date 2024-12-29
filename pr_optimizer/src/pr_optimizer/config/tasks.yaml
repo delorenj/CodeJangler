@@ -1,0 +1,46 @@
+analyze_pr:
+  description: >
+    Analyze the pull request to identify logical split points. Consider:
+    1. Related code changes that should stay together
+    2. Dependencies between changes
+    3. Test coverage and potential risks
+    4. Natural boundaries in the codebase
+  expected_output: >
+    A detailed analysis report containing:
+    - Identified split points with rationale
+    - Dependency graph between changes
+    - Risk assessment for each potential split
+    - Test coverage analysis
+  agent: pr_analyzer
+
+create_split_strategy:
+  description: >
+    Based on the analysis, create and execute a PR split strategy that:
+    1. Maintains code functionality
+    2. Preserves git history
+    3. Handles dependencies correctly
+    4. Creates reviewable chunks
+  expected_output: >
+    A list of new pull requests with:
+    - Clear commit organization
+    - Proper branch structure
+    - Dependency order for review/merge
+    - Updated test coverage
+  agent: pr_splitter
+  depends_on: [analyze_pr]
+
+validate_splits:
+  description: >
+    Review the split pull requests to ensure:
+    1. Each PR is focused and reviewable
+    2. Dependencies are properly handled
+    3. Test coverage is maintained
+    4. The merge sequence is logical
+  expected_output: >
+    A validation report containing:
+    - Quality assessment for each PR
+    - Dependency validation
+    - Test coverage confirmation
+    - Recommended merge sequence
+  agent: pr_reviewer
+  depends_on: [create_split_strategy]
