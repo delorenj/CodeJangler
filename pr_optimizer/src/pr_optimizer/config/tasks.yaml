@@ -43,4 +43,7 @@ validate_splits:
     - Test coverage confirmation
     - Recommended merge sequence
   agent: pr_reviewer
-  depends_on: [create_split_strategy]
+  context: [analyze_pr, create_split_strategy]  # Add explicit context
+    
+
+

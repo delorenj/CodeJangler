@@ -1,22 +1,29 @@
-from crewai.tools import BaseTool
-from typing import Type, List, Dict, Optional
-from pydantic import BaseModel, Field
-from github import Github
 import os
 import re
+from typing import Dict, List, Optional, Type
+
+from crewai.tools import BaseTool
+from github import Github
+from pydantic import BaseModel, Field
+
 
 class ParsePRUrlInput(BaseModel):
     """Input schema for parsing PR URL."""
+
     pr_url: str = Field(..., description="GitHub PR URL to parse")
+
 
 class PRDetailsInput(BaseModel):
     """Input schema for getting PR details."""
+
     owner: str = Field(..., description="Repository owner")
     repo: str = Field(..., description="Repository name")
     pr_number: int = Field(..., description="Pull request number")
 
+
 class CreatePRInput(BaseModel):
     """Input schema for creating a PR."""
+
     owner: str = Field(..., description="Repository owner")
     repo: str = Field(..., description="Repository name")
     title: str = Field(..., description="PR title")
@@ -25,8 +32,10 @@ class CreatePRInput(BaseModel):
     base: str = Field(..., description="Base branch")
     draft: bool = Field(default=False, description="Whether to create as draft PR")
 
+
 class UpdatePRInput(BaseModel):
     """Input schema for updating a PR."""
+
     owner: str = Field(..., description="Repository owner")
     repo: str = Field(..., description="Repository name")
     pr_number: int = Field(..., description="Pull request number")
@@ -34,31 +43,39 @@ class UpdatePRInput(BaseModel):
     body: Optional[str] = Field(None, description="New description")
     state: Optional[str] = Field(None, description="New state (open/closed)")
 
+
 class AddCommentInput(BaseModel):
     """Input schema for adding a PR comment."""
+
     owner: str = Field(..., description="Repository owner")
     repo: str = Field(..., description="Repository name")
     pr_number: int = Field(..., description="Pull request number")
     comment: str = Field(..., description="Comment text")
 
+
 class GetReviewsInput(BaseModel):
     """Input schema for getting PR reviews."""
+
     owner: str = Field(..., description="Repository owner")
     repo: str = Field(..., description="Repository name")
     pr_number: int = Field(..., description="Pull request number")
 
+
 class RequestReviewersInput(BaseModel):
     """Input schema for requesting reviewers."""
+
     owner: str = Field(..., description="Repository owner")
     repo: str = Field(..., description="Repository name")
     pr_number: int = Field(..., description="Pull request number")
     reviewers: List[str] = Field(..., description="List of GitHub usernames")
 
+
 class GitHubTools:
     """Collection of GitHub API tools."""
 
     def __init__(self):
-        self.gh = Github(os.getenv("GITHUB_TOKEN"))
+        self.gh = Github(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"))
+        self.cache = {}  # Add caching
 
     class ParsePRUrl(BaseTool):
         name: str = "parse_pr_url"
@@ -71,11 +88,11 @@ class GitHubTools:
                 match = re.match(pattern, pr_url)
                 if not match:
                     return {"error": "Invalid GitHub PR URL format"}
-                
+
                 return {
                     "owner": match.group(1),
                     "repo": match.group(2),
-                    "pr_number": match.group(3)
+                    "pr_number": match.group(3),
                 }
             except Exception as e:
                 return {"error": str(e)}
@@ -87,17 +104,17 @@ class GitHubTools:
 
         def _run(self, owner: str, repo: str, pr_number: int) -> Dict:
             try:
-                gh = Github(os.getenv("GITHUB_TOKEN"))
+                gh = Github(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"))
                 repo = gh.get_repo(f"{owner}/{repo}")
                 pr = repo.get_pull(pr_number)
-                
+
                 return {
                     "title": pr.title,
                     "body": pr.body,
                     "base": pr.base.ref,
                     "head": pr.head.ref,
                     "commits": [c.sha for c in pr.get_commits()],
-                    "changed_files": [f.filename for f in pr.get_files()]
+                    "changed_files": [f.filename for f in pr.get_files()],
                 }
             except Exception as e:
                 return {"error": str(e)}
@@ -115,23 +132,16 @@ class GitHubTools:
             body: str,
             head: str,
             base: str,
-            draft: bool = False
+            draft: bool = False,
         ) -> Dict:
             try:
-                gh = Github(os.getenv("GITHUB_TOKEN"))
+                gh = Github(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"))
                 repo = gh.get_repo(f"{owner}/{repo}")
                 pr = repo.create_pull(
-                    title=title,
-                    body=body,
-                    head=head,
-                    base=base,
-                    draft=draft
+                    title=title, body=body, head=head, base=base, draft=draft
                 )
-                
-                return {
-                    "number": pr.number,
-                    "url": pr.html_url
-                }
+
+                return {"number": pr.number, "url": pr.html_url}
             except Exception as e:
                 return {"error": str(e)}
 
@@ -147,13 +157,13 @@ class GitHubTools:
             pr_number: int,
             title: Optional[str] = None,
             body: Optional[str] = None,
-            state: Optional[str] = None
+            state: Optional[str] = None,
         ) -> Dict:
             try:
-                gh = Github(os.getenv("GITHUB_TOKEN"))
+                gh = Github(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"))
                 repo = gh.get_repo(f"{owner}/{repo}")
                 pr = repo.get_pull(pr_number)
-                
+
                 if title:
                     pr.edit(title=title)
                 if body:
@@ -163,12 +173,8 @@ class GitHubTools:
                         pr.edit(state="closed")
                     elif state == "open":
                         pr.edit(state="open")
-                
-                return {
-                    "number": pr.number,
-                    "url": pr.html_url,
-                    "state": pr.state
-                }
+
+                return {"number": pr.number, "url": pr.html_url, "state": pr.state}
             except Exception as e:
                 return {"error": str(e)}
 
@@ -179,15 +185,12 @@ class GitHubTools:
 
         def _run(self, owner: str, repo: str, pr_number: int, comment: str) -> Dict:
             try:
-                gh = Github(os.getenv("GITHUB_TOKEN"))
+                gh = Github(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"))
                 repo = gh.get_repo(f"{owner}/{repo}")
                 pr = repo.get_pull(pr_number)
                 comment = pr.create_issue_comment(comment)
-                
-                return {
-                    "id": comment.id,
-                    "body": comment.body
-                }
+
+                return {"id": comment.id, "body": comment.body}
             except Exception as e:
                 return {"error": str(e)}
 
@@ -198,19 +201,21 @@ class GitHubTools:
 
         def _run(self, owner: str, repo: str, pr_number: int) -> List[Dict]:
             try:
-                gh = Github(os.getenv("GITHUB_TOKEN"))
+                gh = Github(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"))
                 repo = gh.get_repo(f"{owner}/{repo}")
                 pr = repo.get_pull(pr_number)
                 reviews = []
-                
+
                 for review in pr.get_reviews():
-                    reviews.append({
-                        "id": review.id,
-                        "state": review.state,
-                        "body": review.body,
-                        "user": review.user.login
-                    })
-                
+                    reviews.append(
+                        {
+                            "id": review.id,
+                            "state": review.state,
+                            "body": review.body,
+                            "user": review.user.login,
+                        }
+                    )
+
                 return reviews
             except Exception as e:
                 return [{"error": str(e)}]
@@ -221,21 +226,14 @@ class GitHubTools:
         args_schema: Type[BaseModel] = RequestReviewersInput
 
         def _run(
-            self,
-            owner: str,
-            repo: str,
-            pr_number: int,
-            reviewers: List[str]
+            self, owner: str, repo: str, pr_number: int, reviewers: List[str]
         ) -> Dict:
             try:
-                gh = Github(os.getenv("GITHUB_TOKEN"))
+                gh = Github(os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"))
                 repo = gh.get_repo(f"{owner}/{repo}")
                 pr = repo.get_pull(pr_number)
                 pr.create_review_request(reviewers=reviewers)
-                
-                return {
-                    "status": "success",
-                    "requested_reviewers": reviewers
-                }
+
+                return {"status": "success", "requested_reviewers": reviewers}
             except Exception as e:
                 return {"error": str(e)}
