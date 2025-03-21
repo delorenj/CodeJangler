@@ -2,6 +2,8 @@ import asyncio
 import os
 import uuid
 from datetime import datetime
+from enum import Enum, auto
+from typing import List, Optional
 
 import streamlit as st
 from agents import (
@@ -53,9 +55,7 @@ This PR provides context on the changes being proposed and their business impact
 """
 
 # Set up page configuration
-st.set_page_config(
-    page_title="Code Jangler", page_icon="📰", layout="wide", initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Code Jangler", page_icon="📰", layout="wide", initial_sidebar_state="expanded")
 
 # Make sure API key is set
 if not os.environ.get("OPENROUTER_API_KEY"):
@@ -69,27 +69,80 @@ st.markdown("""
 Is your PR so big everyone just pretends it doesn't exist? Are you known for creating commits so large they're mistaken for standalone apps? Let Code Jangler Jangle your code into shape!
 """)
 
+
 # Pydantic Type: Available Stack Managers: one of 'none','graphite', 'graphene'
+class StackManagerType(str, Enum):
+    NONE = "none"
+    GRAPHITE = "graphite"
+    GRAPHENE = "graphene"
+
+
 class StackManager(BaseModel):
-    name: str
-    description: str
-    url: str    
+    type: StackManagerType
+    description: str = ""
+    url: str = ""
+
 
 stack_managers = {
-    "none": StackManager(name="None", description="No stack manager", url=""),
-    "graphite": StackManager(name="Graphite", description="Graphite", url=""),
-    "graphene": StackManager(name="Graphene", description="Graphene", url=""),
+    StackManagerType.NONE: StackManager(type=StackManagerType.NONE, description="No stack manager"),
+    StackManagerType.GRAPHITE: StackManager(type=StackManagerType.GRAPHITE, description="Graphite"),
+    StackManagerType.GRAPHENE: StackManager(type=StackManagerType.GRAPHENE, description="Graphene"),
 }
+
 
 class InputQuery(BaseModel):
     # can be either an existing PR url or a branch name
     target: str
     trunk: str = "staging"
-    use_stack_manager: StackManager = stack_managers["none"]
+    stack_manager_type: StackManagerType = StackManagerType.NONE
     pr_template: str = pr_template
 
 
+class PRTypeEnum(str, Enum):
+    FEAT = "feat"
+    CHORE = "chore"
+    FIX = "fix"
+    REFACTOR = "refactor"
+    STYLE = "style"
+    TEST = "test"
+    PERF = "perf"
+    CI = "ci"
+    DOCS = "docs"
+    BUILD = "build"
+    REVERT = "revert"
+
+
+class PRType(BaseModel):
+    type: PRTypeEnum = PRTypeEnum.FEAT
+
+
+class SprintBoardTicket(BaseModel):
+    id: str
+    # optional fields (with Optional type hint)
+    title: Optional[str] = None
+    description: Optional[str] = None
+    story_task: Optional[str] = None
+    acceptance_criteria: Optional[str] = None
+
+
+class PRTitle(BaseModel):
+    type: PRType
+    ticket: SprintBoardTicket
+    title: str
+
+
+class PR(BaseModel):
+    title: PRTitle
+    context: str
+    # Link to self
+    url: str
+    # Related PRs
+    related_prs: List[str] = []
+    files: List[str]
+    diff: str
+    status: str
+
+
 class SplitStrategy(BaseModel):
-    # Number of PRs, >1
-    total_prs: int
-    
+    explanation: str
+    prs: List[str]
