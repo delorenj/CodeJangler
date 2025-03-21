@@ -1,0 +1,22 @@
+[project]
+name = "code-jangler"
+version = "0.1.0"
+description = "An agentic system that splits PRs into a stack of smaller, easier-to-review PRs"
+requires-python = ">=3.10"
+dependencies = [
+    "openai-agents",
+    "openai",
+    "streamlit",
+    "uuid",
+    "pydantic",
+    "python-dotenv",
+    "asyncio",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
