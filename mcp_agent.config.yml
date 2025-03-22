@@ -1,0 +1,24 @@
+$schema: "https://raw.githubusercontent.com/lastmile-ai/mcp-agent/main/schema/mcp-agent.config.schema.json"
+
+mcp:
+  servers:
+    github-prs:
+      command: "node"
+      args: [
+        "/Users/jaraddelorenzo/code/github-pr-mcp/dist/server.js",
+        "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}"
+      ]
+    ai-humanizer:
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-ai-humanizer"]
+    divide-and-conquer:
+      command: npx
+      args: ["-y", "@landicefu/divide-and-conquer-mcp-server"]
+    sequential-thinking:
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    github:
+      command: npx
+      args: ["-y", "@modelcontextprotocol/server-github"]
+      env:
+        GITHUB_PERSONAL_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
