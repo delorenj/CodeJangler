@@ -126,3 +126,11 @@ cython_debug/
 
 # crewai specific
 crewai/
+
+# AI agent chat/task logs: never commit (they capture pasted secrets verbatim)
+docs/logs/
+.specstory/
+.aider.chat.history.md
+.aider.input.history
+.aider.llm.history
+cline_task_*.md
